@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>소시오톡 (SocioTalk) - 사상가 대담</title>
+  <title>소시오톡 (SocioTalk) - AI 음성 대담</title>
   <style>
     * {
       box-sizing: border-box;
@@ -132,7 +132,7 @@
 
     textarea {
       width: 100%;
-      min-height: 120px;
+      min-height: 110px;
       resize: vertical;
       padding: 16px;
       border: 1px solid #ddd;
@@ -151,9 +151,10 @@
       display: flex;
       gap: 10px;
       justify-content: flex-end;
+      margin-top: 4px;
     }
 
-    button {
+    button, .download-link {
       border: none;
       border-radius: 12px;
       padding: 0 24px;
@@ -162,9 +163,13 @@
       cursor: pointer;
       transition: 0.15s;
       font-weight: bold;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    button:hover {
+    button:hover, .download-link:hover {
       transform: translateY(-2px);
       opacity: 0.9;
     }
@@ -175,18 +180,12 @@
       transform: none;
     }
 
-    .ask-btn {
-      background: #2c3e50;
-      color: white;
-    }
-
-    .clear-btn {
-      background: #b0bec5;
-      color: white;
-    }
+    .ask-btn { background: #2c3e50; color: white; }
+    .clear-btn { background: #b0bec5; color: white; }
+    .download-link { background: #7e57c2; color: white; font-size: 14px; height: 40px; }
 
     .answer-box {
-      min-height: 180px;
+      min-height: 150px;
       padding: 20px;
       border-radius: 18px;
       background: #fcfcfc;
@@ -196,6 +195,22 @@
       word-break: break-word;
       font-size: 15px;
     }
+
+    /* 오디오 플레이어 구역 */
+    .audio-section {
+      background: #f4f6f9;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px dashed #cbd5e1;
+      margin-top: 10px;
+    }
+
+    audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .hidden { display: none !important; }
 
     .status {
       min-height: 24px;
@@ -212,31 +227,25 @@
     }
 
     @media (max-width: 700px) {
-      .button-row {
-        justify-content: stretch;
-      }
-      button {
-        width: 100%;
-      }
+      .button-row { justify-content: stretch; flex-direction: column; }
+      button, .download-link { width: 100%; }
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>소시오톡 (SocioTalk)</h1>
-    <div class="subtitle">GitHub Pages + Apps Script + Gemini API 대담 시스템</div>
+    <h1>소시오톡 (SocioTalk) - AI 오디오 대담</h1>
+    <div class="subtitle">GitHub Pages + Apps Script + OpenAI GPT/TTS 통합 시스템</div>
 
     <div class="info">
-      💡 <strong>사용 방법:</strong> 대담하고 싶은 현대 사회의 사상가를 먼저 선택하세요. <br />
-      그 후 하단 입력창에 현대 사회의 쟁점이나 궁금한 점을 질문하면 사상가의 관점으로 답변을 받게 됩니다.
+      🎧 <strong>AI 오디오 가이드:</strong> 대담할 사상가를 선택하고 질문을 작성해 보세요.<br />
+      AI가 사상가의 문체로 글을 작성한 뒤, 사상가의 고유 AI 보이스(TTS)로 답변을 직접 낭독해 줍니다.
     </div>
 
-    <!-- 사상가 선택 구역 -->
     <div class="label">대담할 사상가 선택</div>
     <div class="thinker-selector" id="thinkerSelector"></div>
 
-    <!-- 사상가 한줄 소개 설명창 -->
     <div class="persona-intro" id="personaIntro">사상가를 선택하시면 대담 준비 상태가 됩니다.</div>
 
     <div class="chat-box">
@@ -247,28 +256,36 @@
 
       <div class="button-row">
         <button class="clear-btn" id="clearBtn">화면 초기화</button>
-        <button class="ask-btn" id="askBtn" disabled>대담 시작하기</button>
+        <button class="ask-btn" id="askBtn" disabled>대담 및 음성 생성 시작</button>
       </div>
 
       <div id="status" class="status"></div>
 
       <div>
         <div class="label" id="outputLabel">사상가의 답변</div>
-        <div id="answerBox" class="answer-box">사상가를 선택하고 질문을 던지면 이곳에 심오한 철학적 통찰이 기록됩니다.</div>
+        <div id="answerBox" class="answer-box">사상가를 선택하고 질문을 던지면 이곳에 통찰이 기록됩니다.</div>
+      </div>
+
+      <div id="audioSection" class="audio-section hidden">
+        <div class="label" id="audioLabel">🔊 사상가의 오디오 답변 낭독</div>
+        <audio id="audioPlayer" controls></audio>
+        <div class="button-row">
+          <a id="downloadLink" class="download-link" href="#" download="thinker-speech.mp3">mp3 음성 파일 다운로드</a>
+        </div>
       </div>
 
       <div class="help">
         단축키: 입력창에서 <strong>Ctrl + Enter</strong>를 누르면 대담 질문이 즉시 전송됩니다.<br />
-        답변이 넘어오지 않을 경우 구글 웹 앱 배포 시 권한이 <strong>[Anyone]</strong>(모든 사람)으로 설정되었는지 재확인하세요.
+        텍스트 생성과 TTS 음성 변환이 동시에 처리되므로 답변 완료까지 약 3~7초 가량 소요될 수 있습니다.
       </div>
     </div>
   </div>
 
   <script>
-    // 💡 [필수] 구글 앱스 스크립트 배포 후 새로 발급된 배포 URL 주소를 아래에 꼭 붙여넣으세요!
-    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzwsD644x29aPLtSWhx33iLogtISN7PF-X_3XxuP31CbD4M9m7XthNUGML6yAjW0uoUNg/exec';
+    // 💡 [필수] 구글 앱스 스크립트 배포 후 새로 발급된 본인의 배포 URL 주소를 아래 작은따옴표 안에 붙여넣으세요!
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZdNNVj3q7OdriT-eTh_PzNGVcGdzeMAC14CXGcjotf6zVQRe2pGcfMhCoK1yzLU7zlg/exec';
 
-    // 사상가 데이터 세팅
+    // 사상가 데이터 세팅 (보이스 스타일 힌트 매핑 포함)
     const thinkers = {
       hobbes: { name: '토마스 홉스', keyword: '사회계약설 / 국가 통제', intro: '“강력한 법과 국가(리바이어던)가 없다면 만인의 만인에 대한 투쟁이 발생할 뿐이네.”', avatar: '👑' },
       kant: { name: '임마누엘 칸트', keyword: '의무론 / 정언명령', intro: '“그대의 행동 준칙이 보편적 입법 원리가 되도록 행위하게. 인간을 수단이 아닌 목적으로 대우해야 하네.”', avatar: '⚖️' },
@@ -279,7 +296,7 @@
 
     let selectedThinkerId = null;
 
-    // DOM 요소 캐싱
+    // DOM 캐싱
     const thinkerSelector = document.getElementById('thinkerSelector');
     const personaIntro = document.getElementById('personaIntro');
     const questionInput = document.getElementById('questionInput');
@@ -289,8 +306,12 @@
     const clearBtn = document.getElementById('clearBtn');
     const inputLabel = document.getElementById('inputLabel');
     const outputLabel = document.getElementById('outputLabel');
+    const audioSection = document.getElementById('audioSection');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const downloadLink = document.getElementById('downloadLink');
+    const audioLabel = document.getElementById('audioLabel');
 
-    // 1. 사상가 카드 동적 생성
+    // 1. 사상가 선택 단추 카드 동적 생성
     Object.keys(thinkers).forEach(id => {
       const t = thinkers[id];
       const card = document.createElement('div');
@@ -304,46 +325,40 @@
       thinkerSelector.appendChild(card);
     });
 
-    // 사상가 선택 시 처리 함수
     function selectThinker(id) {
       selectedThinkerId = id;
-      
-      // 카드 활성화 스타일 UI 변경
       document.querySelectorAll('.thinker-card').forEach((card, idx) => {
-        if(Object.keys(thinkers)[idx] === id) {
-          card.classList.add('active');
-        } else {
-          card.classList.remove('active');
-        }
+        if(Object.keys(thinkers)[idx] === id) card.classList.add('active');
+        else card.classList.remove('active');
       });
 
       const t = thinkers[id];
       personaIntro.textContent = t.intro;
       inputLabel.textContent = `[${t.name}]에게 던질 질문`;
       outputLabel.textContent = `[${t.name}]의 대답 결과`;
+      audioLabel.textContent = `🔊 [${t.name}]의 목소리로 듣기`;
       
-      // 비활성화 해제
       questionInput.disabled = false;
       askBtn.disabled = false;
       questionInput.placeholder = `현대 사회 이슈에 대해 ${t.name}의 이론적 관점을 질문해 보세요.`;
     }
 
-    // 2. 이벤트 리스너 설정
-    askBtn.addEventListener('click', askThinker);
+    // 2. 이벤트 리스너 바인딩
+    askBtn.addEventListener('click', askThinkerWithVoice);
     clearBtn.addEventListener('click', clearPage);
 
     questionInput.addEventListener('keydown', function(event) {
       if (event.key === 'Enter' && event.ctrlKey && !askBtn.disabled) {
-        askThinker();
+        askThinkerWithVoice();
       }
     });
 
-    // 3. 구글 웹 앱 서버와 비동기 데이터 송수신 처리 함수
-    async function askThinker() {
+    // 3. 텍스트 답변 청취 및 오디오 디코딩 처리 핵심 함수
+    async function askThinkerWithVoice() {
       const question = questionInput.value.trim();
 
       if (!selectedThinkerId) {
-        alert('대담을 나눌 사상가를 상단에서 먼저 선택해 주세요.');
+        alert('대담을 나눌 사상가를 먼저 선택해 주세요.');
         return;
       }
       if (!question) {
@@ -353,10 +368,11 @@
 
       try {
         setLoading(true);
-        answerBox.textContent = `${thinkers[selectedThinkerId].name}(이)가 깊은 사색에 잠겼습니다. 잠시만 기다려 주십시오...`;
-        statusBox.textContent = '구글 앱스 스크립트 보안 프록시를 통해 사상가에게 질문을 전달 중입니다.';
+        audioSection.classList.add('hidden'); // 새 요청 시 이전 오디오 플레이어 숨김
+        answerBox.textContent = `${thinkers[selectedThinkerId].name} 학파의 논리를 정리하고 목소리를 복원하는 중입니다. 잠시만 기다려 주십시오...`;
+        statusBox.textContent = '구글 서버를 경유하여 OpenAI 통합 대담 자원을 호출 중입니다.';
 
-        // Apps Script 서버로 POST 요청 발송 (question과 thinkerId 동시 전송)
+        // 요청 전송
         const response = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           body: JSON.stringify({
@@ -371,20 +387,54 @@
           throw new Error(data.error);
         }
 
-        answerBox.textContent = data.answer || '사상가의 침묵이 이어지고 있습니다. (답변을 가져오지 못함)';
-        statusBox.textContent = '철학적 대담 수신 완료';
+        // A. 텍스트 화면 출력
+        answerBox.textContent = data.answer || '사상가가 침묵을 지켰습니다.';
+        
+        // B. Base64 오디오 디코딩 및 플레이어 탑재
+        if (data.audioBase64) {
+          const audioUrl = base64ToAudioUrl(data.audioBase64, 'audio/mpeg');
+          audioPlayer.src = audioUrl;
+          downloadLink.href = audioUrl;
+          downloadLink.download = `${thinkers[selectedThinkerId].name}_대담기록.mp3`;
+          audioSection.classList.remove('hidden'); // 오디오 인터페이스 표출
+          statusBox.textContent = '철학적 논증 및 AI 음성 합성 성공';
+        } else {
+          statusBox.textContent = '텍스트 출력 성공 (음성 데이터 유실됨)';
+        }
+
       } catch (error) {
         console.error(error);
-        answerBox.textContent = '💡 대담 중 오류가 발생했습니다.\n\n원인: ' + error.message;
+        answerBox.textContent = '💡 대담 중 통신 장애가 발생했습니다.\n\n원인: ' + error.message;
         statusBox.textContent = '대담 요청 실패';
       } finally {
         setLoading(false);
       }
     }
 
+    // Base64 인코딩 문자열을 브라우저 재생용 Blob URL 객체로 변환해주는 유틸리티 함수
+    function base64ToAudioUrl(base64, mimeType) {
+      const byteCharacters = atob(base64);
+      const byteArrays = [];
+
+      for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+        const slice = byteCharacters.slice(offset, offset + 512);
+        const byteNumbers = new Array(slice.length);
+
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+
+      const blob = new Blob(byteArrays, { type: mimeType });
+      return URL.createObjectURL(blob);
+    }
+
     function setLoading(isLoading) {
       askBtn.disabled = isLoading;
-      askBtn.textContent = isLoading ? '사색 중...' : '대담 시작하기';
+      askBtn.textContent = isLoading ? '사색 및 조음 중...' : '대담 시작하기';
     }
 
     function clearPage() {
@@ -397,6 +447,11 @@
       personaIntro.textContent = '사상가를 선택하시면 대담 준비 상태가 됩니다.';
       inputLabel.textContent = '질문 기입란';
       outputLabel.textContent = '사상가의 답변';
+      
+      audioPlayer.removeAttribute('src');
+      downloadLink.href = '#';
+      audioSection.classList.add('hidden');
+      
       questionInput.disabled = true;
       askBtn.disabled = true;
       questionInput.placeholder = '사상가를 선택한 후 질문을 입력하세요...';
