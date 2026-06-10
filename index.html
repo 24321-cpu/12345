@@ -3,102 +3,405 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>소시오톡 (Firebase + Apps Script 통합본)</title>
+  <title>소시오톡 (SocioTalk) - 사상가들과의 실시간 대화</title>
   <style>
-    * { box-sizing: border-box; font-family: 'Pretendard', sans-serif; }
+    * { box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
     body {
       margin: 0; min-height: 100vh;
-      background: linear-gradient(135deg, #e3f2fd, #fce4ec);
-      display: flex; justify-content: center; align-items: center; padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+      color: #333; display: flex; justify-content: center; align-items: center; padding: 20px;
     }
     .container {
-      width: min(800px, 100%); background: #ffffff;
-      border-radius: 24px; padding: 30px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+      width: min(900px, 92%); margin: 20px auto; background: #ffffff;
+      border-radius: 24px; padding: 28px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
     }
-    h1 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+    h1 { margin: 0 0 4px; text-align: center; font-size: 32px; color: #2c3e50; font-weight: 700; letter-spacing: -1px; }
+    .subtitle { text-align: center; color: #7f8c8d; margin-bottom: 24px; font-size: 14px; font-weight: 400; }
     .hidden { display: none !important; }
     
-    /* 인증 폼 */
+    /* 인증 스타일 */
     .auth-box {
       max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px;
-      padding: 20px; background: #f8f9fa; border-radius: 18px; border: 1px solid #e9ecef;
+      padding: 24px; background: #f8f9fa; border-radius: 18px; border: 1px solid #e9ecef;
     }
-    input, select {
+    .auth-box h2 { margin: 0 0 10px 0; text-align: center; font-size: 20px; color: #2c3e50; }
+    input {
       height: 46px; padding: 0 14px; border: 1px solid #ddd; border-radius: 12px;
-      font-size: 15px; outline: none; width: 100%; margin-bottom: 5px;
+      font-size: 15px; outline: none; width: 100%;
     }
-    input:focus, select:focus { border-color: #42a5f5; box-shadow: 0 0 0 3px rgba(66, 165, 245, 0.15); }
-    button {
-      border: none; border-radius: 12px; padding: 0 16px; height: 46px;
-      font-size: 15px; cursor: pointer; font-weight: bold; transition: 0.2s;
-    }
-    button:hover { transform: translateY(-2px); opacity: 0.9; }
-    .primary-btn { background: #42a5f5; color: white; }
-    .secondary-btn { background: #7e57c2; color: white; }
-    .danger-btn { background: #ef5350; color: white; height: 38px; }
+    input:focus, select:focus { border-color: #34495e; box-shadow: 0 0 0 3px rgba(52, 73, 94, 0.15); }
 
-    /* 상단 바 */
+    /* 사상가 선택창 스타일 */
+    select {
+      height: 46px; padding: 0 14px; border: 1px solid #ddd; border-radius: 12px;
+      font-size: 15px; outline: none; width: 100%; background: #fff; margin-bottom: 10px;
+    }
+
+    /* 상단 유저 바 */
     .top-bar {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 20px; background: #f1f3f5; border-radius: 16px; margin-bottom: 20px;
-    }
-    
-    /* 대화 입력 창 */
-    .talk-box {
-      background: #f8f9fa; padding: 20px; border-radius: 18px; margin-bottom: 20px;
-      display: flex; flex-direction: column; gap: 10px;
+      padding: 12px 20px; background: #f1f3f5; border-radius: 16px; margin-bottom: 20px; font-size: 14px;
     }
 
-    /* 기록 리스트 */
-    .chat-list { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; margin-top: 15px; }
-    .chat-item { background: #f1f3f5; padding: 15px; border-radius: 16px; border-left: 5px solid #7e57c2; position: relative; }
-    .chat-q { font-weight: bold; color: #2c3e50; margin: 0 0 5px 0; }
-    .chat-a { color: #555; margin: 0; line-height: 1.5; white-space: pre-wrap; }
-    .chat-meta { font-size: 11px; color: #999; margin-top: 8px; }
-    .delete-chat-btn { position: absolute; right: 15px; top: 15px; background: none; color: #ef5350; height: auto; padding: 0; font-size: 12px;}
-    .status { color: #e67e22; font-weight: bold; font-size: 14px; margin: 10px 0; min-height: 20px; text-align: center;}
+    .info {
+      padding: 14px; margin-bottom: 20px; border-radius: 14px;
+      background: #e8f4fd; color: #2b5876; font-size: 14px; line-height: 1.6;
+      border-left: 4px solid #4a90e2;
+    }
+    .chat-box { display: flex; flex-direction: column; gap: 14px; }
+    
+    /* 기존 단일 라인 입력을 위해 input 텍스트 타입으로 유지 */
+    input[type="text"] {
+      width: 100%; height: 50px; padding: 0 16px;
+      border: 1px solid #ddd; border-radius: 16px; font-size: 16px; outline: none;
+    }
+    input[type="text"]:focus { border-color: #34495e; box-shadow: 0 0 0 3px rgba(52, 73, 94, 0.15); }
+    
+    .button-row { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+    button {
+      border: none; border-radius: 12px; padding: 0 18px; height: 46px;
+      font-size: 15px; cursor: pointer; transition: 0.15s; font-weight: bold;
+    }
+    button:hover { transform: translateY(-2px); opacity: 0.9; }
+    button:disabled { cursor: not-allowed; opacity: 0.6; transform: none; }
+    
+    .primary-btn { background: #2c3e50; color: white; }
+    .clear-btn { background: #b0bec5; color: white; }
+    .secondary-btn { background: #7f8c8d; color: white; }
+    .danger-btn { background: #e74c3c; color: white; height: 36px; padding: 0 12px; font-size: 13px; }
+    .stop-btn { background: #e74c3c; color: white; }
+
+    .answer-box {
+      min-height: 140px; padding: 18px; border-radius: 18px;
+      background: #f8f9fa; border: 1px solid #edf1f5; line-height: 1.7;
+      white-space: pre-wrap; word-break: break-word; font-size: 15px;
+    }
+    .status { min-height: 24px; color: #7f8c8d; font-size: 14px; font-weight: bold; }
+    .label { font-weight: bold; margin-bottom: 6px; color: #2c3e50; }
+    .help { margin-top: 12px; font-size: 13px; color: #7f8c8d; line-height: 1.6; }
+
+    /* 대화 기록 리스트 */
+    .history-title { margin-top: 30px; font-size: 18px; color: #2c3e50; border-bottom: 2px solid #edf1f5; padding-bottom: 8px; }
+    .chat-list { display: flex; flex-direction: column; gap: 12px; max-height: 350px; overflow-y: auto; margin-top: 10px; }
+    .chat-item { background: #fdfdfd; padding: 15px; border-radius: 16px; border-left: 5px solid #2c3e50; position: relative; border-top: 1px solid #edf1f5; border-right: 1px solid #edf1f5; border-bottom: 1px solid #edf1f5; }
+    .chat-q { font-weight: bold; color: #2980b9; margin: 0 0 6px 0; font-size: 15px; }
+    .chat-a { color: #444; margin: 0; line-height: 1.6; font-size: 14px; white-space: pre-wrap; }
+    .chat-meta { font-size: 11px; color: #aaa; margin-top: 8px; }
+    .del-btn { position: absolute; right: 15px; top: 15px; background: none; color: #e74c3c; height: auto; padding: 0; font-size: 12px; font-weight: normal; }
+
+    @media (max-width: 700px) {
+      .button-row { justify-content: stretch; }
+      button { width: 100%; }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>🎓 소시오톡 AI 하이브리드</h1>
+    <h1>💬 소시오톡 (SocioTalk)</h1>
+    <div class="subtitle">시공간을 넘어 역사 속 사상가들과 나누는 지성적인 대화</div>
 
+    <!-- [1단계] 로그인 / 회원가입 화면 -->
     <section id="authSection">
       <div class="auth-box">
-        <h2>보안 로그인 / 가입</h2>
+        <h2>소시오톡 시작하기</h2>
         <input id="emailInput" type="email" placeholder="이메일 주소" />
         <input id="passwordInput" type="password" placeholder="비밀번호 (6자리 이상)" />
-        <button class="primary-btn" id="loginBtn">로그인</button>
-        <button class="secondary-btn" id="signupBtn">신규 회원가입</button>
+        <button class="primary-btn" style="width:100%; margin-bottom:4px;" id="loginBtn">로그인</button>
+        <button class="secondary-btn" style="width:100%;" id="signupBtn">새로운 계정 만들기</button>
       </div>
     </section>
 
+    <!-- [2단계] 메인 대화 화면 -->
     <section id="mainSection" class="hidden">
       <div class="top-bar">
-        <div>👤 <strong id="userEmail"></strong> 님 접속중</div>
+        <div>👤 접속 사용자: <strong id="userEmail"></strong></div>
         <button class="danger-btn" id="logoutBtn">로그아웃</button>
       </div>
 
-      <div class="talk-box">
-        <h3>사상가에게 질문하기</h3>
-        <select id="thinkerSelect">
-          <option value="weber">막스 베버 (이해사회학 / 관료제) 🧔 [남성음]</option>
-          <option value="hobbes">토마스 홉스 (사회계약설 / 국가통제) 👴</option>
-          <option value="kant">임마누엘 칸트 (의무론 / 정언명령) 👨‍🏫</option>
-          <option value="marx">카를 마르크스 (갈등론 / 자본주의비판) 🧔</option>
-          <option value="durkheim">에밀 뒤르켐 (기능론 / 사회통합) 👨‍⚕️</option>
-        </select>
-        <input id="questionInput" type="text" placeholder="철학자에게 던질 사회적 질문을 입력하세요" />
-        <button class="primary-btn" id="sendBtn">생각 묻기 & 목소리 듣기</button>
+      <div class="info">
+        <strong>SocioTalk 시스템:</strong> 사상가 선택 기능 + Firebase 계정/DB 연동 + ChatGPT 답변 생성 및 TTS 실시간 음성 출력이 통합 기동 중입니다.
       </div>
 
-      <div id="status" class="status"></div>
+      <div class="chat-box">
+        <div>
+          <div class="label">대화할 사상가 선택</div>
+          <!-- 📥 요청하신 사상가 선택창 배치 -->
+          <select id="thinkerSelect">
+            <option value="막스 베버">막스 베버 (이해사회학 / 관료제) 🧔</option>
+            <option value="토마스 홉스">토마스 홉스 (사회계약설 / 국가통제) 👴</option>
+            <option value="임마누엘 칸트">임마누엘 칸트 (의무론 / 정언명령) 👨‍🏫</option>
+            <option value="카를 마르크스">카를 마르크스 (갈등론 / 자본주의비판) 🧔</option>
+            <option value="에밀 뒤르켐">에밀 뒤르켐 (기능론 / 사회통합) 👨‍⚕️</option>
+          </select>
 
-      <h3>📜 대화 기록 보관소 (Firebase)</h3>
-      <div id="chatList" class="chat-list"></div>
+          <div class="label" style="margin-top: 10px;">질문 내용</div>
+          <!-- 📥 요청하신 단일 라인 질문 입력창 및 버튼 구성 -->
+          <input id="questionInput" type="text" placeholder="철학자에게 던질 사회적 질문을 입력하세요" />
+        </div>
+
+        <div class="button-row">
+          <button class="clear-btn" id="clearBtn">대화창 비우기</button>
+          <button class="stop-btn hidden" id="stopBtn">⏹️ 음성 중지</button>
+          <button class="primary-btn" id="sendBtn">생각 묻기 & 목소리 듣기</button>
+        </div>
+
+        <div id="status" class="status"></div>
+
+        <div>
+          <div class="label" id="responseLabel">사상가의 답변</div>
+          <div id="answerBox" class="answer-box">사상가를 선택하고 질문을 던져 지혜를 청해 보세요.</div>
+        </div>
+
+        <div class="help">
+          '생각 묻기'를 누르면 AI가 답변을 생성한 뒤 브라우저가 사상가의 정체성에 맞추어 자동으로 음성을 낭독합니다.
+        </div>
+
+        <!-- 📜 파이어베이스 DB 연동 과거 대화 아카이브 -->
+        <h3 class="history-title">📜 소시오톡 대화록 아카이브 (Firebase DB)</h3>
+        <div id="chatList" class="chat-list"></div>
+      </div>
     </section>
   </div>
 
+  <!-- 파이어베이스 모듈 통합 스크립트 -->
   <script type="module">
-    import { initializeApp } from '
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getDatabase, ref, push, set, remove, onValue, off } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+    // 파이어베이스 계정 연동 설정값
+    const firebaseConfig = {
+      apiKey: "AIzaSyBpo6WziaKPXIcjwhLT8o_F1HzlxY6vwVo",
+      authDomain: "test-3c5e3.firebaseapp.com",
+      databaseURL: "https://test-3c5e3-default-rtdb.firebaseio.com",
+      projectId: "test-3c5e3",
+      storageBucket: "test-3c5e3.firebasestorage.app",
+      messagingSenderId: "1037312662659",
+      appId: "1:1037312662659:web:03526e8b905fddcb70cfb6",
+      measurementId: "G-WK2DR49CHT"
+    };
+
+    // 구글 앱스 스크립트 웹앱 API 주소
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsaJG_5s610PoEtvUuelkfBP3XUUzRskZEZBDbqkUQLLh1QyqhD5obCjj61Ik7pFeBMQ/exec';
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const database = getDatabase(app);
+
+    const authSection = document.getElementById('authSection');
+    const mainSection = document.getElementById('mainSection');
+    const emailInput = document.getElementById('emailInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userEmail = document.getElementById('userEmail');
+    
+    const thinkerSelect = document.getElementById('thinkerSelect');
+    const questionInput = document.getElementById('questionInput');
+    const answerBox = document.getElementById('answerBox');
+    const responseLabel = document.getElementById('responseLabel');
+    const statusBox = document.getElementById('status');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const chatList = document.getElementById('chatList');
+
+    let currentUser = null;
+    let currentDbRef = null;
+    let isSpeaking = false;
+
+    // 회원가입 처리
+    signupBtn.addEventListener('click', async () => {
+      if(!emailInput.value || !passwordInput.value) return alert('이메일과 비밀번호를 입력해주세요.');
+      try {
+        await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+        alert('소시오톡 가입이 완료되었습니다!');
+      } catch(e) { alert('가입 실패: ' + e.message); }
+    });
+
+    // 로그인 처리
+    loginBtn.addEventListener('click', async () => {
+      if(!emailInput.value || !passwordInput.value) return alert('이메일과 비밀번호를 입력해주세요.');
+      try {
+        await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+      } catch(e) { alert('로그인 실패: 비밀번호 또는 계정을 확인하세요.'); }
+    });
+
+    // 로그아웃 처리
+    logoutBtn.addEventListener('click', () => {
+      stopTTS();
+      signOut(auth);
+    });
+
+    // 인증 상태 변화 추적
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        authSection.classList.add('hidden');
+        mainSection.classList.remove('hidden');
+        userEmail.textContent = user.email;
+        loadSavedChats(user.uid);
+      } else {
+        currentUser = null;
+        authSection.classList.remove('hidden');
+        mainSection.classList.add('hidden');
+        if(currentDbRef) off(currentDbRef);
+        chatList.innerHTML = '';
+        clearPage();
+      }
+    });
+
+    // DB 연동 과거 내역 로드
+    function loadSavedChats(uid) {
+      currentDbRef = ref(database, `users/${uid}/history`);
+      onValue(currentDbRef, (snapshot) => {
+        renderChats(snapshot.val());
+      });
+    }
+
+    // 엔터키 입력 지원
+    questionInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        askChatGPT();
+      }
+    });
+
+    sendBtn.addEventListener('click', askChatGPT);
+    clearBtn.addEventListener('click', clearPage);
+    stopBtn.addEventListener('click', stopTTS);
+
+    // 핵심 로직: API 통신 및 DB 저장
+    async function askChatGPT() {
+      const selectedThinker = thinkerSelect.value;
+      const questionText = questionInput.value.trim();
+      
+      if (!questionText) {
+        alert('사상가에게 던질 사회적 질문을 입력하세요.');
+        return;
+      }
+
+      // ChatGPT가 선택된 사상가처럼 고유 페르소나를 갖고 답변하도록 질문을 가공하여 송신
+      const structuredQuestion = `너는 역사적 사상가 '${selectedThinker}'야. 사상가의 관점과 철학을 바탕으로 다음 질문에 깊이 있게 답변해 줘. 질문: ${questionText}`;
+
+      try {
+        stopTTS();
+        setLoading(true);
+        responseLabel.textContent = `✍️ ${selectedThinker}의 답변 작성 중`;
+        answerBox.textContent = `${selectedThinker} 가 깊은 사색에 잠겨 답변을 작성 중입니다...`;
+        statusBox.textContent = `소시오톡 망을 통해 ${selectedThinker}에게 질문을 전송했습니다.`;
+
+        // [1] 생성형 AI 연동 통신
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ question: structuredQuestion })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        const finalAnswer = data.answer || '답변을 수신하지 못했습니다.';
+        responseLabel.textContent = `📢 ${selectedThinker}의 답변 결과`;
+        answerBox.textContent = finalAnswer;
+        statusBox.textContent = '대화 및 연동 완료';
+
+        // [2] TTS 연동 자동 음성 낭독
+        speakTTS(finalAnswer);
+
+        // [3] 파이어베이스 리얼타임 데이터베이스 실시간 저장
+        const historyRef = ref(database, `users/${currentUser.uid}/history`);
+        const newRecordRef = push(historyRef);
+        await set(newRecordRef, {
+          thinker: selectedThinker,
+          question: questionText,
+          answer: finalAnswer,
+          time: new Date().toLocaleString('ko-KR')
+        });
+
+      } catch (error) {
+        console.error(error);
+        answerBox.textContent = '통신에 실패했습니다.\n\n' + error.message;
+        statusBox.textContent = '네트워크 장애';
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    // TTS 기능 제어 엔진 (남성음/진중한 톤 조절)
+    function speakTTS(text) {
+      if (!text || text.includes('사색에 잠겨 답변을 작성 중')) return;
+      
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ko-KR'; 
+      utterance.rate = 0.95; // 원숙하고 깊이 있는 목소리를 위해 속도를 살짝 다운
+      utterance.pitch = 0.85; // 사상가 콘셉트에 맞게 톤을 낮추어 남성적인 울림 구현
+
+      utterance.onstart = () => {
+        isSpeaking = true;
+        stopBtn.classList.remove('hidden');
+      };
+
+      utterance.onend = () => {
+        isSpeaking = false;
+        stopBtn.classList.add('hidden');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function stopTTS() {
+      window.speechSynthesis.cancel();
+      isSpeaking = false;
+      stopBtn.classList.add('hidden');
+    }
+
+    function setLoading(isLoading) {
+      sendBtn.disabled = isLoading;
+      sendBtn.textContent = isLoading ? '사색 중...' : '생각 묻기 & 목소리 듣기';
+    }
+
+    function clearPage() {
+      stopTTS();
+      questionInput.value = '';
+      answerBox.textContent = '사상가를 선택하고 질문을 던져 지혜를 청해 보세요.';
+      responseLabel.textContent = '사상가의 답변';
+      statusBox.textContent = '';
+    }
+
+    // 파이어베이스 DB 데이터 개별 삭제
+    window.deleteHistory = async function(id) {
+      if(!confirm('이 대화 기록을 아카이브에서 영구 삭제하시겠습니까?')) return;
+      try {
+        await remove(ref(database, `users/${currentUser.uid}/history/${id}`));
+      } catch(e) { alert('삭제 실패: ' + e.message); }
+    };
+
+    // 파이어베이스 실시간 데이터 수신 및 화면 출력
+    function renderChats(data) {
+      chatList.innerHTML = '';
+      if(!data) {
+        chatList.innerHTML = '<div style="text-align:center; padding:15px; color:#999; font-size:13px;">아직 아카이브된 대화 내역이 없습니다.</div>';
+        return;
+      }
+      Object.entries(data).reverse().forEach(([id, item]) => {
+        const div = document.createElement('div');
+        div.className = 'chat-item';
+        div.innerHTML = `
+          <button class="del-btn" onclick="deleteHistory('${id}')">삭제</button>
+          <p class="chat-q"><strong>[${escapeHTML(item.thinker || '사상가')}]</strong> 에 대한 나의 질문: ${escapeHTML(item.question)}</p>
+          <p class="chat-a">가르침: ${escapeHTML(item.answer)}</p>
+          <div class="chat-meta">📅 대화 일시: ${item.time}</div>
+        `;
+        chatList.appendChild(div);
+      });
+    }
+
+    function escapeHTML(text) {
+      return String(text).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+    }
+  </script>
+</body>
+</html>
