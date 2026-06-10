@@ -274,7 +274,7 @@
 
     // 핵심 로직: API 통신 및 DB 저장
     const selectedThinker = thinkerSelect.value;
-    const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text;
+    const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text.split(' (')[0];
     
     async function askChatGPT() {
       const selectedThinker = thinkerSelect.value;
@@ -286,14 +286,14 @@
       }
 
       // ChatGPT가 선택된 사상가처럼 고유 페르소나를 갖고 답변하도록 질문을 가공하여 송신
-      const structuredQuestion = `너는 역사적 사상가 '${selectedThinker}'야. 사상가의 관점과 철학을 바탕으로 다음 질문에 깊이 있게 답변해 줘. 질문: ${questionText}`;
+      const structuredQuestion = `너는 역사적 사상가 '${thinkerNameKorean}'야. 사상가의 관점과 철학을 바탕으로 다음 질문에 깊이 있게 답변해 줘. 질문: ${questionText}`;
 
       try {
         stopTTS();
         setLoading(true);
-        responseLabel.textContent = `✍️ ${selectedThinker}의 답변 작성 중`;
-        answerBox.textContent = `${selectedThinker} 가 깊은 사색에 잠겨 답변을 작성 중입니다...`;
-        statusBox.textContent = `소시오톡 망을 통해 ${selectedThinker}에게 질문을 전송했습니다.`;
+        responseLabel.textContent = `✍️ ${thinkerNameKorean}의 답변 작성 중`;
+        answerBox.textContent = `${thinkerNameKorean} 가 깊은 사색에 잠겨 답변을 작성 중입니다...`;
+        statusBox.textContent = `소시오톡 망을 통해 ${thinkerNameKorean}에게 질문을 전송했습니다.`;
 
         // [1] 생성형 AI 연동 통신
         const response = await fetch(APPS_SCRIPT_URL, {
@@ -305,7 +305,7 @@
         if (data.error) throw new Error(data.error);
 
         const finalAnswer = data.answer || '답변을 수신하지 못했습니다.';
-        responseLabel.textContent = `📢 ${selectedThinker}의 답변 결과`;
+        responseLabel.textContent = `📢 ${thinkerNameKorean}의 답변 결과`;
         answerBox.textContent = finalAnswer;
         statusBox.textContent = '대화 및 연동 완료';
 
