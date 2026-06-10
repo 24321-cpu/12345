@@ -272,12 +272,10 @@
     clearBtn.addEventListener('click', clearPage);
     stopBtn.addEventListener('click', stopTTS);
 
-    // 핵심 로직: API 통신 및 DB 저장
-    const selectedThinker = thinkerSelect.value;
-    const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text.split(' (')[0];
-    
+    // 핵심 로직: API 통신 및 DB 저장    
     async function askChatGPT() {
       const selectedThinker = thinkerSelect.value;
+      const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text.split(' (')[0];
       const questionText = questionInput.value.trim();
       
       if (!questionText) {
