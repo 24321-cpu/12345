@@ -274,7 +274,7 @@
 
     // 핵심 로직: API 통신 및 DB 저장
     const selectedThinker = thinkerSelect.value;
-    const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text.split(' (')[0];
+    const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text;
     
     async function askChatGPT() {
       const selectedThinker = thinkerSelect.value;
