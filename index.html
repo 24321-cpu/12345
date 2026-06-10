@@ -128,11 +128,11 @@
           <div class="label">대화할 사상가 선택</div>
           <!-- 📥 요청하신 사상가 선택창 배치 -->
           <select id="thinkerSelect">
-            <option value="막스 베버">막스 베버 (이해사회학 / 관료제) 🧔</option>
-            <option value="토마스 홉스">토마스 홉스 (사회계약설 / 국가통제) 👴</option>
-            <option value="임마누엘 칸트">임마누엘 칸트 (의무론 / 정언명령) 👨‍🏫</option>
-            <option value="카를 마르크스">카를 마르크스 (갈등론 / 자본주의비판) 🧔</option>
-            <option value="에밀 뒤르켐">에밀 뒤르켐 (기능론 / 사회통합) 👨‍⚕️</option>
+            <option value="weber">막스 베버 (이해사회학 / 관료제) 🧔</option>
+            <option value="hobbs">토마스 홉스 (사회계약설 / 국가통제) 👴</option>
+            <option value="kant">임마누엘 칸트 (의무론 / 정언명령) 👨‍🏫</option>
+            <option value="marx">카를 마르크스 (갈등론 / 자본주의비판) 🧔</option>
+            <option value="durkheim">에밀 뒤르켐 (기능론 / 사회통합) 👨‍⚕️</option>
           </select>
 
           <div class="label" style="margin-top: 10px;">질문 내용</div>
@@ -273,6 +273,9 @@
     stopBtn.addEventListener('click', stopTTS);
 
     // 핵심 로직: API 통신 및 DB 저장
+    const selectedThinker = thinkerSelect.value;
+    const thinkerNameKorean = thinkerSelect.options[thinkerSelect.selectedIndex].text.split(' (')[0];
+    
     async function askChatGPT() {
       const selectedThinker = thinkerSelect.value;
       const questionText = questionInput.value.trim();
@@ -295,7 +298,7 @@
         // [1] 생성형 AI 연동 통신
         const response = await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
-          body: JSON.stringify({ question: structuredQuestion })
+          body: JSON.stringify({ question: structuredQuestion, thinkerId: selectedThinker })
         });
 
         const data = await response.json();
